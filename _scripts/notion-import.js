@@ -1,9 +1,9 @@
-const { Client } = require("@notionhq/client");
-const { NotionToMarkdown } = require("notion-to-md");
-const moment = require("moment");
-const path = require("path");
-const fs = require("fs");
-const axios = require("axios");
+const { Client } = require('@notionhq/client');
+const { NotionToMarkdown } = require('notion-to-md');
+const moment = require('moment');
+const path = require('path');
+const fs = require('fs');
+const axios = require('axios');
 
 const notion = new Client({
   auth: process.env.NOTION_TOKEN,
@@ -12,25 +12,25 @@ const notion = new Client({
 function escapeCodeBlock(body) {
   const regex = /```([\s\S]*?)```/g;
   return body.replace(regex, function (match, htmlBlock) {
-    return "\n{% raw %}\n```" + htmlBlock.trim() + "\n```\n{% endraw %}\n";
+    return '\n{% raw %}\n```' + htmlBlock.trim() + '\n```\n{% endraw %}\n';
   });
 }
 
 function makeMarkdownTitle(body) {
-    return body.replaceAll("\n\n#", "\n\n##");
+  return body.replaceAll('\n\n#', '\n\n##');
 }
 
 const n2m = new NotionToMarkdown({ notionClient: notion });
 
 (async () => {
-  const root = "_posts";
+  const root = '_posts';
   fs.mkdirSync(root, { recursive: true });
 
   const databaseId = process.env.DATABASE_ID;
   let response = await notion.databases.query({
     database_id: databaseId,
     filter: {
-      property: "공개",
+      property: '공개',
       checkbox: {
         equals: true,
       },
@@ -44,7 +44,7 @@ const n2m = new NotionToMarkdown({ notionClient: notion });
       database_id: databaseId,
       start_cursor: nextCursor,
       filter: {
-        property: "공개",
+        property: '공개',
         checkbox: {
           equals: true,
         },
@@ -56,52 +56,52 @@ const n2m = new NotionToMarkdown({ notionClient: notion });
   for (const r of pages) {
     const id = r.id;
     // date
-    let date = moment(r.created_time).format("YYYY-MM-DD");
-    let pdate = r.properties?.["날짜"]?.["date"]?.["start"];
+    let date = moment(r.created_time).format('YYYY-MM-DD');
+    let pdate = r.properties?.['날짜']?.['date']?.['start'];
     if (pdate) {
-      date = moment(pdate).format("YYYY-MM-DD");
+      date = moment(pdate).format('YYYY-MM-DD');
     }
     // title
     let title = id;
-    let ptitle = r.properties?.["게시물"]?.["title"];
+    let ptitle = r.properties?.['게시물']?.['title'];
     if (ptitle?.length > 0) {
-      title = ptitle[0]?.["plain_text"];
+      title = ptitle[0]?.['plain_text'];
     }
     // tags
     let tags = [];
-    let ptags = r.properties?.["태그"]?.["multi_select"];
+    let ptags = r.properties?.['태그']?.['multi_select'];
     for (const t of ptags) {
-      const n = t?.["name"];
+      const n = t?.['name'];
       if (n) {
         tags.push(n);
       }
     }
     // categories
     let cats = [];
-    let pcats = r.properties?.["카테고리"]?.["multi_select"];
+    let pcats = r.properties?.['카테고리']?.['multi_select'];
     for (const t of pcats) {
-      const n = t?.["name"];
+      const n = t?.['name'];
       if (n) {
         cats.push(n);
       }
     }
 
     // frontmatter
-    let fmtags = "";
-    let fmcats = "";
+    let fmtags = '';
+    let fmcats = '';
     if (tags.length > 0) {
-      fmtags += "\ntags: [";
+      fmtags += '\ntags: [';
       for (const t of tags) {
-        fmtags += t + ", ";
+        fmtags += t + ', ';
       }
-      fmtags += "]";
+      fmtags += ']';
     }
     if (cats.length > 0) {
-      fmcats += "\ncategories: [";
+      fmcats += '\ncategories: [';
       for (const t of cats) {
-        fmcats += t + ", ";
+        fmcats += t + ', ';
       }
-      fmcats += "]";
+      fmcats += ']';
     }
     const fm = `---
 layout: post
@@ -111,30 +111,30 @@ title: "${title}"${fmtags}${fmcats}
 
 `;
     const mdblocks = await n2m.pageToMarkdown(id);
-    let md = n2m.toMarkdownString(mdblocks)["parent"];
-    if (md === "") {
+    let md = n2m.toMarkdownString(mdblocks)['parent'];
+    if (md === '') {
       continue;
     }
     console.log(md);
     md = escapeCodeBlock(md);
     md = makeMarkdownTitle(md);
 
-    const ftitle = `${date}-${title.replaceAll(" ", "-")}.md`;
+    const ftitle = `${date}-${title.replaceAll(' ', '-')}.md`;
 
     let index = 0;
     let edited_md = md.replace(
       /!\[(.*?)\]\((.*?)\)/g,
       function (match, p1, p2, p3) {
-        const dirname = path.join("assets/img", ftitle);
+        const dirname = path.join('assets/img', ftitle);
         if (!fs.existsSync(dirname)) {
           fs.mkdirSync(dirname, { recursive: true });
         }
         const filename = path.join(dirname, `${index}.png`);
 
         axios({
-          method: "get",
+          method: 'get',
           url: p2,
-          responseType: "stream",
+          responseType: 'stream',
         })
           .then(function (response) {
             let file = fs.createWriteStream(`${filename}`);
@@ -145,7 +145,7 @@ title: "${title}"${fmtags}${fmcats}
           });
 
         let res;
-        if (p1 === "") res = "";
+        if (p1 === '') res = '';
         else res = `_${p1}_`;
 
         return `![${index++}](/${filename})${res}`;
