@@ -6,7 +6,7 @@ const fs = require('fs');
 const axios = require('axios');
 
 const notion = new Client({
-  auth: 'env.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',
+  auth: process.env.NOTION_TOKEN,
 });
 
 function escapeCodeBlock(body) {
