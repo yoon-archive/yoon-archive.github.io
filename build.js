@@ -78,15 +78,20 @@ const slugOf = (page) =>
     .toLowerCase().replace(/[^a-z0-9\s-]/g,"").trim().replace(/\s+/g,"-");
 
 const writePage = async (page) => {
-  const title = page.properties?.Title?.title?.[0]?.plain_text || "Untitled";
-  const slug = slugOf(page);
-  const blocks = await fetchAllBlocks(page.id);
-  const body = await renderBlocks(blocks);
-  await fs.mkdir(OUT,{recursive:true});
-  await fs.writeFile(path.join(OUT, `${slug}.html`), wrap(title, `<h1>${esc(title)}</h1>\n${body}`));
-  return { title, slug };
+  const title = page.properties?.이름?.title?.[0]?.plain_text
+            || page.properties?.Title?.title?.[0]?.plain_text || "Untitled";
+  const url = page.properties?.PublicUrl?.url; // 노션 공개 URL
+  const slug = (page.properties?.Slug?.rich_text?.[0]?.plain_text || title)
+                .toLowerCase().replace(/[^a-z0-9- ]/g,"").trim().replace(/\s+/g,"-");
+  await fs.mkdir("dist", { recursive: true });
+  // meta refresh + fallback 링크
+  const html = `<!doctype html><meta charset="utf-8">
+  <title>${title}</title>
+  <meta http-equiv="refresh" content="0;url=${url}">
+  <a href="${url}">노션에서 보기</a>`;
+  await fs.writeFile(`dist/${slug}.html`, html);
+  return { title, slug, url };
 };
-
 const writeIndex = async (items) => {
   const list = items.map(p=>`<li><a href="${p.slug}.html">${esc(p.title)}</a></li>`).join("");
   await fs.writeFile(path.join(OUT, "index.html"), wrap("블로그", `<h1>블로그</h1><ul>${list}</ul>`));
